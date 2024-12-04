@@ -71,7 +71,15 @@ WHERE Capacity > 30
   AND OffersDelivery = TRUE;
 
 -- Uklonite iz jelovnika jela koja nisu naručena u posljednje 2 godine.
-
+UPDATE MenuItems
+SET DeletedAt = CURRENT_TIMESTAMP
+WHERE MenuItemId IN (
+    SELECT mi.MenuItemId
+    FROM MenuItems mi
+    LEFT JOIN OrderMenuItems omi ON mi.MenuItemId = omi.MenuItemId
+    LEFT JOIN Orders o ON omi.OrderId = o.OrderId
+    WHERE o.Date < CURRENT_DATE - INTERVAL '2 years' OR o.Date IS NULL
+);
 
 -- Izbrišite loyalty kartice svih korisnika koji nisu naručili nijedno jelo u posljednjih godinu dana.
 UPDATE Users

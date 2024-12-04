@@ -61,6 +61,7 @@ CREATE TABLE MenuItems(
     MenuItemId SERIAL PRIMARY KEY,
     RestaurantId INT References Restaurant(RestaurantId),
     DishId INT References Dish(DishId),
+    DeletedAt TIMESTAMP,
     CONSTRAINT UniqueDishInRestaurant UNIQUE (RestaurantId, DishId)
 );
 
