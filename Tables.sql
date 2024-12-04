@@ -1,0 +1,131 @@
+CREATE TABLE City(
+    CityId SERIAL PRIMARY KEY,
+    Name VARCHAR(30) NOT NULL UNIQUE,
+    Latitude FLOAT NOT NULL,
+    Longitude FLOAT NOT NULL
+);
+
+CREATE TABLE Restaurant(
+    RestaurantId SERIAL PRIMARY KEY,
+    CityId INT References City(CityId),
+    Name VARCHAR(50) NOT NULL,
+    Capacity INT CHECK(Capacity > 0),
+    StartTime TIME NOT NULL,
+    EndTime TIME CHECK(EndTime >= StartTime),
+    OffersDelivery BOOLEAN NOT NULL
+);
+
+CREATE TABLE Users(
+    UserId SERIAL PRIMARY KEY,
+    Name VARCHAR(30) NOT NULL,
+    Surname VARCHAR(30) NOT NULL,
+    Birthdate TIMESTAMP CHECK(Birthdate < CURRENT_TIMESTAMP),
+    LoyaltyCard BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE Dish(
+    DishId SERIAL PRIMARY KEY,
+    Name VARCHAR(50) NOT NULL,
+    Category VARCHAR(30) CHECK (Category IN ('Appetizer', 'Main course', 'Dessert', 'Drink', 'Side dish')),
+    Price FLOAT CHECK(Price > 0),
+    Calories INT CHECK(Calories > 0),
+    IsAvailable BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE Staff(
+    StaffId SERIAL PRIMARY KEY,
+    RestaurantId INT References Restaurant(RestaurantId),
+    Name VARCHAR(30) NOT NULL,
+    Surname VARCHAR(30) NOT NULL,
+    Age INT CHECK(Age > 0),
+    Role VARCHAR(30) CHECK (Role IN ('Chef', 'Waiter', 'Deliverer')),
+    HasDriverLicense BOOLEAN NOT NULL
+);
+
+CREATE TABLE Orders(
+    OrderId SERIAL PRIMARY KEY,
+    UserId INT References Users(UserId),
+    StaffId INT References Staff(StaffId),
+    IsForDelivery BOOLEAN NOT NULL,
+    DeliveryNote VARCHAR(150),
+    Address VARCHAR(50),
+    Date TIMESTAMP CHECK(Date < CURRENT_TIMESTAMP),
+    TotalPrice FLOAT CHECK(TotalPrice >= 0)
+);
+
+CREATE TABLE MenuItems(
+    MenuItemId SERIAL PRIMARY KEY,
+    RestaurantId INT References Restaurant(RestaurantId),
+    DishId INT References Dish(DishId)
+);
+
+
+CREATE TABLE OrderMenuItems (
+    OrderMenuItemId SERIAL PRIMARY KEY,
+    OrderId INT References Orders(OrderId),
+    MenuItemId INT References MenuItems(MenuItemId),
+    Amount INT CHECK (Amount > 0)
+);
+
+CREATE TABLE Review(
+    ReviewId SERIAL PRIMARY KEY,
+    OrderMenuItemId INT References OrderMenuItems(OrderMenuItemId),
+    Comment VARCHAR(100),
+    Rating INT CHECK(Rating BETWEEN 1 AND 5)
+);
+
+
+ALTER TABLE Orders 
+    ADD CONSTRAINT CheckDelivery
+    CHECK (
+        (IsForDelivery = TRUE AND Address IS NOT NULL) 
+        OR (IsForDelivery = FALSE AND Address IS NULL)
+        OR (IsForDelivery = FALSE AND DeliveryNote IS NULL)
+    );
+
+    
+ALTER TABLE Staff 
+ADD CONSTRAINT CheckDelivererLicense 
+CHECK (Role != 'Deliverer' OR HasDriverLicense = TRUE);
+
+ALTER TABLE Staff 
+ADD CONSTRAINT CheckChefAge 
+CHECK (Role != 'Chef' OR Age >= 18);
+
+ALTER TABLE Staff
+ADD CONSTRAINT UniqueStaffRestaurant
+UNIQUE (StaffId, RestaurantId);
+
+ALTER TABLE Orders
+ADD CONSTRAINT CheckOrderDate
+CHECK (Date <= CURRENT_TIMESTAMP);
+
+ALTER TABLE Dish
+ADD CONSTRAINT CheckDishAvailability
+CHECK (IsAvailable IN (TRUE, FALSE));
+
+UPDATE Users
+SET LoyaltyCard = TRUE
+WHERE UserId IN (
+    SELECT o.UserId
+    FROM Orders o
+    GROUP BY o.UserId
+    HAVING COUNT(o.OrderId) > 2 AND SUM(o.TotalPrice) > 1000
+);
+
+
+--nakon unosa podataka
+UPDATE Orders
+SET TotalPrice = subquery.TotalPrice
+FROM (
+    SELECT 
+        o.OrderId,
+        SUM(d.Price * omi.Amount) AS TotalPrice
+    FROM Orders o
+    JOIN OrderMenuItems omi ON o.OrderId = omi.OrderId
+    JOIN MenuItems mi ON omi.MenuItemId = mi.MenuItemId
+    JOIN Dish d ON mi.DishId = d.DishId
+    GROUP BY o.OrderId
+) AS subquery
+WHERE Orders.OrderId = subquery.OrderId;
+
