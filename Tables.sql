@@ -12,7 +12,8 @@ CREATE TABLE Restaurant(
     Capacity INT CHECK(Capacity > 0),
     StartTime TIME NOT NULL,
     EndTime TIME CHECK(EndTime >= StartTime),
-    OffersDelivery BOOLEAN NOT NULL
+    OffersDelivery BOOLEAN NOT NULL,
+    CONSTRAINT UniqueRestaurantNameCity UNIQUE (Name, CityId) 
 );
 
 CREATE TABLE Users(
@@ -29,7 +30,8 @@ CREATE TABLE Dish(
     Category VARCHAR(30) CHECK (Category IN ('Appetizer', 'Main course', 'Dessert', 'Drink', 'Side dish')),
     Price FLOAT CHECK(Price > 0),
     Calories INT CHECK(Calories > 0),
-    IsAvailable BOOLEAN DEFAULT TRUE
+    IsAvailable BOOLEAN DEFAULT TRUE,
+    CONSTRAINT UniqueDish UNIQUE (Name, Category, Calories)
 );
 
 CREATE TABLE Staff(
@@ -39,7 +41,8 @@ CREATE TABLE Staff(
     Surname VARCHAR(30) NOT NULL,
     Age INT CHECK(Age > 0),
     Role VARCHAR(30) CHECK (Role IN ('Chef', 'Waiter', 'Deliverer')),
-    HasDriverLicense BOOLEAN NOT NULL
+    HasDriverLicense BOOLEAN NOT NULL,
+    CONSTRAINT UniqueStaffInRestaurant UNIQUE (StaffId, RestaurantId) 
 );
 
 CREATE TABLE Orders(
@@ -50,15 +53,16 @@ CREATE TABLE Orders(
     DeliveryNote VARCHAR(150),
     Address VARCHAR(50),
     Date TIMESTAMP CHECK(Date < CURRENT_TIMESTAMP),
-    TotalPrice FLOAT CHECK(TotalPrice >= 0)
+    TotalPrice FLOAT CHECK(TotalPrice >= 0),
+    CONSTRAINT UniqueUserPerOrder UNIQUE (OrderId, UserId) 
 );
 
 CREATE TABLE MenuItems(
     MenuItemId SERIAL PRIMARY KEY,
     RestaurantId INT References Restaurant(RestaurantId),
-    DishId INT References Dish(DishId)
+    DishId INT References Dish(DishId),
+    CONSTRAINT UniqueDishInRestaurant UNIQUE (RestaurantId, DishId)
 );
-
 
 CREATE TABLE OrderMenuItems (
     OrderMenuItemId SERIAL PRIMARY KEY,
@@ -76,17 +80,21 @@ CREATE TABLE Review(
 
 
 ALTER TABLE Orders 
-    ADD CONSTRAINT CheckDelivery
-    CHECK (
-        (IsForDelivery = TRUE AND Address IS NOT NULL) 
-        OR (IsForDelivery = FALSE AND Address IS NULL)
-        OR (IsForDelivery = FALSE AND DeliveryNote IS NULL)
-    );
+ADD CONSTRAINT CheckDelivery
+CHECK (
+    (IsForDelivery = TRUE AND Address IS NOT NULL) 
+    OR (IsForDelivery = FALSE AND Address IS NULL)
+    OR (IsForDelivery = FALSE AND DeliveryNote IS NULL)
+);
 
     
-ALTER TABLE Staff 
-ADD CONSTRAINT CheckDelivererLicense 
-CHECK (Role != 'Deliverer' OR HasDriverLicense = TRUE);
+ALTER TABLE Staff
+ADD CONSTRAINT CheckDelivererAgeAndLicense
+CHECK (
+    Role != 'Deliverer' 
+    OR (HasDriverLicense = TRUE AND Age >= 18)
+);
+
 
 ALTER TABLE Staff 
 ADD CONSTRAINT CheckChefAge 
@@ -104,17 +112,20 @@ ALTER TABLE Dish
 ADD CONSTRAINT CheckDishAvailability
 CHECK (IsAvailable IN (TRUE, FALSE));
 
+
+--nakon unosa podataka
+
+
 UPDATE Users
 SET LoyaltyCard = TRUE
 WHERE UserId IN (
     SELECT o.UserId
     FROM Orders o
     GROUP BY o.UserId
-    HAVING COUNT(o.OrderId) > 2 AND SUM(o.TotalPrice) > 1000
+    HAVING COUNT(o.OrderId) > 2 AND SUM(o.TotalPrice) > 100
 );
 
 
---nakon unosa podataka
 UPDATE Orders
 SET TotalPrice = subquery.TotalPrice
 FROM (
