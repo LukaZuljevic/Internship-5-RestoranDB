@@ -5969,7 +5969,14 @@ INSERT INTO ordermenuitems(orderid,menuitemid,amount) VALUES (599,165,2);
 INSERT INTO ordermenuitems(orderid,menuitemid,amount) VALUES (599,920,5);
 INSERT INTO ordermenuitems(orderid,menuitemid,amount) VALUES (599,1133,5);
 INSERT INTO ordermenuitems(orderid,menuitemid,amount) VALUES (600,1364,3);
-
+INSERT INTO ordermenuitems(orderid,menuitemid,amount) VALUES (80,800,10);
+INSERT INTO ordermenuitems(orderid,menuitemid,amount) VALUES (125,414,10);
+INSERT INTO ordermenuitems(orderid,menuitemid,amount) VALUES (398,236,10);
+INSERT INTO ordermenuitems(orderid,menuitemid,amount) VALUES (435,1471,10);
+INSERT INTO ordermenuitems(orderid,menuitemid,amount) VALUES (106,1,10);
+INSERT INTO ordermenuitems(orderid,menuitemid,amount) VALUES (494,2,10);
+INSERT INTO ordermenuitems(orderid,menuitemid,amount) VALUES (534,3,8);
+INSERT INTO ordermenuitems(orderid,menuitemid,amount) VALUES (597,4,5);
 
 
 

@@ -30,7 +30,6 @@ CREATE TABLE Dish(
     Category VARCHAR(30) CHECK (Category IN ('Appetizer', 'Main course', 'Dessert', 'Drink', 'Side dish')),
     Price FLOAT CHECK(Price > 0),
     Calories INT CHECK(Calories > 0),
-    IsAvailable BOOLEAN DEFAULT TRUE,
     CONSTRAINT UniqueDish UNIQUE (Name, Category, Calories)
 );
 
@@ -41,8 +40,7 @@ CREATE TABLE Staff(
     Surname VARCHAR(30) NOT NULL,
     Age INT CHECK(Age > 0),
     Role VARCHAR(30) CHECK (Role IN ('Chef', 'Waiter', 'Deliverer')),
-    HasDriverLicense BOOLEAN NOT NULL,
-    CONSTRAINT UniqueStaffInRestaurant UNIQUE (StaffId, RestaurantId) 
+    HasDriverLicense BOOLEAN NOT NULL
 );
 
 CREATE TABLE Orders(
@@ -62,6 +60,7 @@ CREATE TABLE MenuItems(
     RestaurantId INT References Restaurant(RestaurantId),
     DishId INT References Dish(DishId),
     DeletedAt TIMESTAMP,
+    IsAvailable BOOLEAN DEFAULT TRUE,
     CONSTRAINT UniqueDishInRestaurant UNIQUE (RestaurantId, DishId)
 );
 
@@ -109,21 +108,17 @@ ALTER TABLE Orders
 ADD CONSTRAINT CheckOrderDate
 CHECK (Date <= CURRENT_TIMESTAMP);
 
-ALTER TABLE Dish
-ADD CONSTRAINT CheckDishAvailability
-CHECK (IsAvailable IN (TRUE, FALSE));
-
+ALTER TABLE MenuItems
+ADD CONSTRAINT CheckIfMenuItemValid CHECK(IsAvailable = TRUE);
 
 --nakon unosa podataka
-
-
 UPDATE Users
 SET LoyaltyCard = TRUE
 WHERE UserId IN (
     SELECT o.UserId
     FROM Orders o
     GROUP BY o.UserId
-    HAVING COUNT(o.OrderId) > 2 AND SUM(o.TotalPrice) > 100
+    HAVING COUNT(o.OrderId) > 4 AND SUM(o.TotalPrice) > 1000
 );
 
 

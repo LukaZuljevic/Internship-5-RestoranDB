@@ -15,7 +15,7 @@ FROM Staff s
 JOIN Orders o ON s.StaffId = o.StaffId
 WHERE s.Role = 'Deliverer'
 GROUP BY s.StaffId, s.Name, s.Surname
-HAVING COUNT(o.OrderId) > 100;
+HAVING COUNT(o.OrderId) >= 3;
 
 -- Ispis svih kuhara koji rade u restoranima u Zagrebu.
 SELECT s.StaffId, s.Name, s.Surname, r.Name AS RestaurantName
@@ -45,7 +45,7 @@ WHERE d.Category = 'Dessert'
   AND EXTRACT(YEAR FROM o.Date) = 2023
   AND EXTRACT(MONTH FROM o.Date) = 12
 GROUP BY d.DishId, d.Name
-HAVING SUM(omi.Amount) > 10;
+HAVING SUM(omi.Amount) >= 10;
 
 -- Ispis broja narudžbi korisnika s prezimenom koje počinje na "M".
 SELECT u.UserId, u.Surname, COUNT(o.OrderId) AS TotalOrders
@@ -88,5 +88,7 @@ WHERE UserId IN (
     SELECT u.UserId
     FROM Users u
     LEFT JOIN Orders o ON u.UserId = o.UserId
-    WHERE o.Date < NOW() - INTERVAL '1 year'
+    GROUP BY u.UserId
+    HAVING MAX(o.Date) < NOW() - INTERVAL '1 year' OR MAX(o.Date) IS NULL
 );
+
